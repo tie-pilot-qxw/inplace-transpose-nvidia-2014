@@ -1,6 +1,9 @@
 #include "rotate.h"
-#include "util.h"
-#include "equations.h"
+#include "util.cuh"
+#include "equations.cuh"
+#include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/transform.h>
 
 namespace inplace {
 namespace detail {

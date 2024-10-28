@@ -1,10 +1,10 @@
-#include "rotate.h"
-#include "equations.h"
-#include "gcd.h"
+#include <cuda/rotate.h>
+#include <cuda/equations.cuh>
+#include <common/gcd.h>
 #include <thrust/device_vector.h>
 #include <iostream>
 #include <cassert>
-#include "util.h"
+#include <common/index.cuh>
 
 struct fine_rotate_gold {
     typedef int result_type;

@@ -1,5 +1,5 @@
-#include "memory_ops.h"
-#include "equations.h"
+#include "memory_ops.cuh"
+#include "equations.cuh"
 
 namespace inplace {
 namespace detail {

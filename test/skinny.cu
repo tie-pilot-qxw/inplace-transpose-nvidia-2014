@@ -1,8 +1,9 @@
-#include "util.h"
-#include "skinny.h"
-#include "save_array.h"
+#include "util/util.h"
+#include <cuda/skinny.h>
+#include "util/save_array.h"
 #include "util/randint.h"
 #include <cstdlib>
+#include <common/index.cuh>
 
 
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "index.h"
+#include "../common/index.cuh"
 
 namespace inplace {
 namespace detail {

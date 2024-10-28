@@ -6,7 +6,6 @@
 //These classes provide for reduced complexity division and modulus
 //on integers, for the case where the same divisor or modulus will
 //be used repeatedly.  
-
 namespace inplace {
 
 namespace detail {
@@ -81,3 +80,4 @@ typedef reduced_divisor_impl<unsigned long long> reduced_divisor_64;
 
 
 }
+

@@ -1,14 +1,15 @@
 #include <iostream>
-#include "transpose.h"
+#include <cuda/transpose.h>
 
 #include <thrust/device_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/functional.h>
 #include <cstdlib>
-#include "util.h"
+#include "util/util.h"
 #include <unistd.h>
 #include "util/randint.h"
+#include <common/index.cuh>
 
 using namespace inplace;
 

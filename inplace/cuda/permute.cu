@@ -1,6 +1,12 @@
-#include "equations.h"
+#include "equations.cuh"
 #include "permute.h"
-#include <cstdio>
+#include "../common/index.cuh"
+#include <vector>
+#include <set>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/transform.h>
+#include "util.cuh"
+
 
 namespace inplace {
 namespace detail {

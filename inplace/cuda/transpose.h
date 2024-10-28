@@ -1,8 +1,8 @@
 #pragma once
 
-#include "introspect.h"
-#include "index.h"
-#include "equations.h"
+// #include "introspect.h"
+// #include "index.h"
+// #include "equations.cuh"
 
 namespace inplace {
 

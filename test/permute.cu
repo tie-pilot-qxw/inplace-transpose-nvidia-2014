@@ -1,9 +1,9 @@
-#include "permute.h"
-#include "equations.h"
+#include <cuda/permute.h>
+#include <cuda/equations.cuh>
 #include <thrust/device_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <cassert>
-#include "util.h"
+#include <common/index.cuh>
 
 struct gather_permute {
     int m, n, c;

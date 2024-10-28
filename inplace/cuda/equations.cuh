@@ -1,7 +1,7 @@
 #pragma once
-#include "index.h"
-#include "reduced_math.h"
-#include "gcd.h"
+#include "../common/index.cuh"
+#include "../common/reduced_math.cuh"
+#include "../common/gcd.h"
 
 namespace inplace {
 namespace detail {

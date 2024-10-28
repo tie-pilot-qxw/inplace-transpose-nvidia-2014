@@ -1,5 +1,5 @@
-#include "introspect.h"
-#include <iostream>
+#include "introspect.cuh"
+
 namespace inplace {
 
 namespace {

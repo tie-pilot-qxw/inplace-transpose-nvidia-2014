@@ -1,5 +1,8 @@
 #define THRUST_DEVICE_SYSTEM THRUST_DEVICE_SYSTEM_OMP
-#define __forceinline__ 
+#define __forceinline__ inline
+#define __host__ 
+#define __device__ 
+
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -7,9 +10,9 @@
 #include "util/randint.h"
 #include <iostream>
 #include <algorithm>
-#include "util.h"
-
-#include "openmp.h"
+#include <common/index.cuh>
+#include "util/util.h"
+#include <openmp/openmp.h>
 
 #include <sys/time.h>
 

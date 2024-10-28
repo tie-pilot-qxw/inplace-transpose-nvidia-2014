@@ -1,5 +1,5 @@
 #pragma once
-#include "reduced_math.h"
+#include "reduced_math.cuh"
 
 namespace inplace {
 

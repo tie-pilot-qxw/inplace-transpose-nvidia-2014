@@ -19,3 +19,6 @@ test/permute
 test/rotate
 test/skinny
 test/test_openmp
+.vscode/
+.xmake/
+build/

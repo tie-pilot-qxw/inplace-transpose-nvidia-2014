@@ -1,3 +1,5 @@
+#include "reduced_math.cuh"
+
 #include <stdexcept>
 
 namespace inplace {

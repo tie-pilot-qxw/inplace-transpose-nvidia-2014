@@ -1,18 +1,15 @@
-#include "introspect.h"
-#include "index.h"
-#include "gcd.h"
-#include "reduced_math.h"
-#include "equations.h"
-#include "smem.h"
+#include "introspect.cuh"
+#include "../common/index.cuh"
+#include "../common/gcd.h"
+#include "../common/reduced_math.cuh"
+#include "equations.cuh"
+#include "smem.cuh"
 #include <cassert>
 
-#include <iostream>
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 #include <thrust/device_ptr.h>
-#include <cstdio>
 
-#include "save_array.h"
 
 namespace inplace {
 namespace detail {

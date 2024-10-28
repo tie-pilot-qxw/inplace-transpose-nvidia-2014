@@ -5,7 +5,7 @@
 #include "smem_ops.h"
 #include "timer.h"
 #include "gcd.h"
-#include "equations.h"
+#include "equations.cuh"
 #include <iostream>
 
 #ifdef SMEM

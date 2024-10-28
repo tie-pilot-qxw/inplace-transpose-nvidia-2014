@@ -1,9 +1,11 @@
-#include <thrust/host_vector.h>
-#include "gcd.h"
-#include "index.h"
+#define __forceinline__ inline
+#define __host__ 
+#define __device__ 
+
+#include <common/gcd.h>
+#include <common/index.cuh>
 #include <algorithm>
 #include <omp.h>
-#include "reduced_math.h"
 
 namespace inplace {
 namespace openmp {

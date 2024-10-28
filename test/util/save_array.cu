@@ -1,4 +1,9 @@
 #include "save_array.h"
+#include <fstream>
+#include <iostream>
+#include <cstdlib>
+#include <cuda_runtime.h>
+
 namespace inplace {
 void save_array(const char* name,
                 int* gpu_d,

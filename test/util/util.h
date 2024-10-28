@@ -1,5 +1,5 @@
 #pragma once
-#include "index.h"
+#include <common/index.cuh>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 

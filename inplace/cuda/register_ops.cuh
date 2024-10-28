@@ -1,6 +1,6 @@
 #pragma once
-#include "array.h"
-#include "index.h"
+#include "array.cuh"
+#include "../common/index.cuh"
 
 namespace inplace {
 namespace detail {
