@@ -11,7 +11,7 @@ def reg_variants(sm):
     for wpt in [16, 18, 30, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60]:
         yield "-DREG -DSM=%s -DWPT=%s" % (sm, wpt)
         
-sm = "sm_35"
+sm = "sm_80"
 #variants = list(itertools.chain(smem_variants(sm), reg_variants(sm)))
 variants = list(smem_variants(sm))
 #variants = list(reg_variants(sm))
