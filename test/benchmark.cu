@@ -85,6 +85,11 @@ void generate_random_size(int& m, int &n) {
 
 struct chunk {
     std::uint32_t data[8];
+    __device__ __host__
+    void operator=(const chunk &other) {
+        reinterpret_cast<uint4*>(data)[0] = reinterpret_cast<const uint4*>(other.data)[0];
+        reinterpret_cast<uint4*>(data)[1] = reinterpret_cast<const uint4*>(other.data)[1];
+    }
 };
 
 int main() {
