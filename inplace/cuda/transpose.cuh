@@ -15,15 +15,15 @@ namespace inplace {
 
 namespace c2r {
 template <typename T>
-void transpose(bool row_major, T* data, int m, int n);
+void transpose(bool row_major, T* data, int m, int n, cudaStream_t stream = 0);
 }
 namespace r2c {
 template <typename T>
-void transpose(bool row_major, T* data, int m, int n);
+void transpose(bool row_major, T* data, int m, int n, cudaStream_t stream = 0);
 }
 
 template <typename T>
-void transpose(bool row_major, T* data, int m, int n);
+void transpose(bool row_major, T* data, int m, int n, cudaStream_t stream = 0);
 
 }
 
@@ -146,7 +146,7 @@ namespace detail {
 // }
 
 template <typename T, typename F>
-void sm_80_enact(T* data, int m, int n, F s) {
+void sm_80_enact(T* data, int m, int n, F s, cudaStream_t stream) {
     cudaDeviceProp prop;
     cudaGetDeviceProperties(&prop, 0);
     auto reserved_smem = prop.reservedSharedMemPerBlock;
@@ -154,25 +154,25 @@ void sm_80_enact(T* data, int m, int n, F s) {
         int smem_bytes = sizeof(T) * n;
         cudaFuncSetAttribute(smem_row_shuffle<T, F>, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_bytes);
         check_error("set attr");
-        smem_row_shuffle<<<m, 256, smem_bytes>>>(m, n, data, s);
+        smem_row_shuffle<<<m, 256, smem_bytes, stream>>>(m, n, data, s);
         check_error("smem shuffle");
     } else if (n * sizeof(T) < 120 * 4 * 512) {
         register_row_shuffle<T, F, 120 * 4 / sizeof(T)>
-            <<<m, 512>>>(m, n, data, s);
+            <<<m, 512, 0, stream>>>(m, n, data, s);
         check_error("register 120 shuffle");
         
     } else {
         T* temp;
-        cudaMalloc(&temp, sizeof(T) * n * n_ctas());
+        cudaMallocAsync(&temp, sizeof(T) * n * n_ctas(), stream);
         memory_row_shuffle
-            <<<n_ctas(), n_threads()>>>(m, n, data, temp, s);
-        cudaFree(temp);
+            <<<n_ctas(), n_threads(), 0, stream>>>(m, n, data, temp, s);
+        cudaFreeAsync(temp, stream);
         check_error("memory shuffle");
     }
 }
 
 template <typename T, typename F>
-void sm_86_enact(T* data, int m, int n, F s) {
+void sm_86_enact(T* data, int m, int n, F s, cudaStream_t stream) {
     cudaDeviceProp prop;
     cudaGetDeviceProperties(&prop, 0);
     auto reserved_smem = prop.reservedSharedMemPerBlock;
@@ -180,41 +180,40 @@ void sm_86_enact(T* data, int m, int n, F s) {
         int smem_bytes = sizeof(T) * n;
         cudaFuncSetAttribute(smem_row_shuffle<T, F>, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_bytes);
         check_error("set attr");
-        smem_row_shuffle<<<m, 256, smem_bytes>>>(m, n, data, s);
+        smem_row_shuffle<<<m, 256, smem_bytes, stream>>>(m, n, data, s);
         check_error("smem shuffle");
     } else if (n * sizeof(T) < 60 * 4 * 512) {
         register_row_shuffle<T, F, 60 * 4 / sizeof(T)>
-            <<<m, 512>>>(m, n, data, s);
+            <<<m, 512, 0, stream>>>(m, n, data, s);
         check_error("register 60 shuffle");
 
     } else if (n * sizeof(T) < 120 * 4 * 512) {
         register_row_shuffle<T, F, 120 * 4 / sizeof(T)>
-            <<<m, 512>>>(m, n, data, s);
+            <<<m, 512, 0, stream>>>(m, n, data, s);
         check_error("register 120 shuffle");
-        
     } else {
         T* temp;
-        cudaMalloc(&temp, sizeof(T) * n * n_ctas());
+        cudaMallocAsync(&temp, sizeof(T) * n * n_ctas(), stream);
         memory_row_shuffle
-            <<<n_ctas(), n_threads()>>>(m, n, data, temp, s);
-        cudaFree(temp);
+            <<<n_ctas(), n_threads(), 0, stream>>>(m, n, data, temp, s);
+        cudaFreeAsync(temp, stream);
         check_error("memory shuffle");
     }
 }
 
 template<typename T, typename F>
-void shuffle_fn(T* data, int m, int n, F s) {
+void shuffle_fn(T* data, int m, int n, F s, cudaStream_t stream) {
     int arch = current_sm();
     if (arch == 800 || arch == 807) {
-        sm_80_enact(data, m, n, s);
+        sm_80_enact(data, m, n, s, stream);
     } else if (arch > 800) {
-        sm_86_enact(data, m, n, s);
+        sm_86_enact(data, m, n, s, stream);
     } else {
         T* temp;
-        cudaMalloc(&temp, sizeof(T) * n * n_ctas());
+        cudaMallocAsync(&temp, sizeof(T) * n * n_ctas(), stream);
         memory_row_shuffle
-            <<<n_ctas(), n_threads()>>>(m, n, data, temp, s);
-        cudaFree(temp);
+            <<<n_ctas(), n_threads(), 0, stream>>>(m, n, data, temp, s);
+        cudaFreeAsync(temp, stream);
         check_error("memory shuffle");
     }
 }
@@ -224,7 +223,7 @@ void shuffle_fn(T* data, int m, int n, F s) {
 namespace c2r {
 
 template<typename T>
-void transpose(bool row_major, T* data, int m, int n) {
+void transpose(bool row_major, T* data, int m, int n, cudaStream_t stream) {
     if (!row_major) {
         std::swap(m, n);
     }
@@ -238,14 +237,14 @@ void transpose(bool row_major, T* data, int m, int n) {
         k = t;
     }
     if (c > 1) {
-        detail::rotate(detail::c2r::prerotator(n/c), m, n, data);
+        detail::rotate(detail::c2r::prerotator(n/c), m, n, data, stream);
     }
-    detail::shuffle_fn(data, m, n, detail::c2r::shuffle(m, n, c, k));
-    detail::rotate(detail::c2r::postrotator(m), m, n, data);
+    detail::shuffle_fn(data, m, n, detail::c2r::shuffle(m, n, c, k), stream);
+    detail::rotate(detail::c2r::postrotator(m), m, n, data, stream);
     int* temp_int;
-    cudaMalloc(&temp_int, sizeof(int) * m);
-    detail::scatter_permute(detail::c2r::scatter_postpermuter(m, n, c), m, n, data, temp_int);
-    cudaFree(temp_int);
+    cudaMallocAsync(&temp_int, sizeof(int) * m, stream);
+    detail::scatter_permute(detail::c2r::scatter_postpermuter(m, n, c), m, n, data, temp_int, stream);
+    cudaFreeAsync(temp_int, stream);
 }
 
 }
@@ -253,7 +252,7 @@ void transpose(bool row_major, T* data, int m, int n) {
 namespace r2c {
 
 template<typename T>
-void transpose(bool row_major, T* data, int m, int n) {
+void transpose(bool row_major, T* data, int m, int n, cudaStream_t stream) {
     if (row_major) {
         std::swap(m, n);
     }
@@ -267,13 +266,13 @@ void transpose(bool row_major, T* data, int m, int n) {
         k = t;
     }
     int* temp_int;
-    cudaMalloc(&temp_int, sizeof(int) * m);
-    detail::scatter_permute(detail::r2c::scatter_prepermuter(m, n, c), m, n, data, temp_int);
-    cudaFree(temp_int);
-    detail::rotate(detail::r2c::prerotator(m), m, n, data);
-    detail::shuffle_fn(data, m, n, detail::r2c::shuffle(m, n, c, k));
+    cudaMallocAsync(&temp_int, sizeof(int) * m, stream);
+    detail::scatter_permute(detail::r2c::scatter_prepermuter(m, n, c), m, n, data, temp_int, stream);
+    cudaFreeAsync(temp_int, stream);
+    detail::rotate(detail::r2c::prerotator(m), m, n, data, stream);
+    detail::shuffle_fn(data, m, n, detail::r2c::shuffle(m, n, c, k), stream);
     if (c > 1) {
-        detail::rotate(detail::r2c::postrotator(n/c, m), m, n, data);
+        detail::rotate(detail::r2c::postrotator(n/c, m), m, n, data, stream);
     }
 }
 
@@ -281,7 +280,7 @@ void transpose(bool row_major, T* data, int m, int n) {
 
 
 template<typename T>
-void transpose(bool row_major, T* data, int m, int n) {
+void transpose(bool row_major, T* data, int m, int n, cudaStream_t stream) {
     bool small_m = m < 32;
     bool small_n = n < 32;
     //Heuristic to choose the fastest implementation
@@ -290,25 +289,25 @@ void transpose(bool row_major, T* data, int m, int n) {
         std::swap(m, n);
         if (!row_major) {
             inplace::detail::c2r::skinny_transpose(
-                data, m, n);
+                data, m, n, stream);
         } else {
             inplace::detail::r2c::skinny_transpose(
-                data, m, n);
+                data, m, n, stream);
         }
     } else if (small_m) {
         if (!row_major) {
             inplace::detail::r2c::skinny_transpose(
-                data, m, n);
+                data, m, n, stream);
         } else {
             inplace::detail::c2r::skinny_transpose(
-                data, m, n);
+                data, m, n, stream);
         }
     } else {
         bool m_greater = m > n;
         if (m_greater ^ row_major) {
-            inplace::r2c::transpose(row_major, data, m, n);
+            inplace::r2c::transpose(row_major, data, m, n, stream);
         } else {
-            inplace::c2r::transpose(row_major, data, m, n);
+            inplace::c2r::transpose(row_major, data, m, n, stream);
         }
     }
 }

@@ -11,7 +11,7 @@ namespace inplace {
 namespace detail {
 
     template<typename F, typename T>
-    void rotate(F f, int m, int n, T* data);
+    void rotate(F f, int m, int n, T* data, cudaStream_t stream = 0);
 
 }
 }
@@ -176,13 +176,13 @@ __global__ void fine_col_rotate(F fn, int m, int n, T* d) {
 }
 
 template<typename F, typename T>
-void rotate(F fn, int m, int n, T* data) {
+void rotate(F fn, int m, int n, T* data, cudaStream_t stream) {
     int n_blocks = div_up(n, 32);
     dim3 block_dim(32, 32);
     if (fn.fine()) {
-        fine_col_rotate<<<n_blocks, block_dim>>>(fn, m, n, data);
+        fine_col_rotate<<<n_blocks, block_dim, 0, stream>>>(fn, m, n, data);
     }
-    coarse_col_rotate<<<n_blocks, dim3(32, 16)>>>(
+    coarse_col_rotate<<<n_blocks, dim3(32, 16), 0,  stream>>>(
         fn, m, n, data);
 }
 

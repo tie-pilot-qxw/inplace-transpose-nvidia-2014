@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../common/index.cuh"
-#include <vector>
 #include <set>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/transform.h>
@@ -11,7 +10,7 @@ namespace inplace {
 namespace detail {
 
 template<typename T, typename F>
-void scatter_permute(F f, int m, int n, T* data, int* tmp);
+void scatter_permute(F f, int m, int n, T* data, int* tmp, cudaStream_t stream = 0);
 
 }
 }
@@ -20,7 +19,7 @@ namespace inplace {
 namespace detail {
     
 template<typename Fn>
-void scatter_cycles(Fn f, std::vector<int>& heads, std::vector<int>& lens) {
+void scatter_cycles(Fn f, int *heads, int &heads_sz, int *lens, int &lens_sz) {
     int len = f.len();
     thrust::counting_iterator<int> i(0);
     std::set<int> unvisited(i, i+len);
@@ -29,7 +28,7 @@ void scatter_cycles(Fn f, std::vector<int>& heads, std::vector<int>& lens) {
         unvisited.erase(unvisited.begin());
         int dest = f(idx);
         if (idx != dest) {
-            heads.push_back(idx);
+            heads[heads_sz++] = idx;
             int start = idx;
             int len = 1;
             //std::cout << "Cycle: " << start << " " << dest << " ";
@@ -41,7 +40,7 @@ void scatter_cycles(Fn f, std::vector<int>& heads, std::vector<int>& lens) {
                 //std::cout << dest << " ";
             }
             //std::cout << std::endl;
-            lens.push_back(len);
+            lens[lens_sz++] = len;
         }
     }
 }
@@ -98,25 +97,31 @@ __global__ void cycle_row_permute(F f, T* data, int* heads,
 }
 
 template<typename T, typename F>
-void scatter_permute(F f, int m, int n, T* data, int* tmp) {
-    std::vector<int> heads;
-    std::vector<int> lens;
-    scatter_cycles(f, heads, lens);
+void scatter_permute(F f, int m, int n, T* data, int* tmp, cudaStream_t stream) {
+    int *heads, *lens;
+    cudaHostAlloc(&heads, sizeof(int) * m / 2, cudaHostAllocDefault);
+    cudaHostAlloc(&lens, sizeof(int) * m / 2, cudaHostAllocDefault);
+    int heads_sz = 0, lens_sz = 0;
+
+    scatter_cycles(f, heads, heads_sz, lens, lens_sz);
     int* d_heads = tmp;
     int* d_lens = tmp + m / 2;
-    cudaMemcpy(d_heads, heads.data(), sizeof(int)*heads.size(),
-               cudaMemcpyHostToDevice);
-    cudaMemcpy(d_lens, lens.data(), sizeof(int)*lens.size(),
-               cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(d_heads, heads, sizeof(int)*heads_sz,
+               cudaMemcpyHostToDevice, stream);
+    cudaMemcpyAsync(d_lens, lens, sizeof(int)*lens_sz,
+               cudaMemcpyHostToDevice, stream);
     int n_threads_x = 256;
     int n_threads_y = 1024/n_threads_x;
     
     int n_blocks_x = div_up(n, n_threads_x);
-    int n_blocks_y = div_up(heads.size(), n_threads_y);
+    int n_blocks_y = div_up(heads_sz, n_threads_y);
     cycle_row_permute<T, F, 4>
         <<<dim3(n_blocks_x, n_blocks_y),
-        dim3(n_threads_x, n_threads_y)>>>
-        (f, data, d_heads, d_lens, heads.size());
+        dim3(n_threads_x, n_threads_y), 0, stream>>>
+        (f, data, d_heads, d_lens, heads_sz);
+
+    cudaFreeHost(heads);
+    cudaFreeHost(lens);
 }
 
 }

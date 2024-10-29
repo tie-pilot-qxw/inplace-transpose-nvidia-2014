@@ -17,14 +17,14 @@ namespace detail {
 namespace c2r {
 
 template <typename T>
-void skinny_transpose(T* data, int m, int n);
+void skinny_transpose(T* data, int m, int n, cudaStream_t stream = 0);
 
 }
 
 namespace r2c {
 
 template <typename T>
-void skinny_transpose(T* data, int m, int n);
+void skinny_transpose(T* data, int m, int n, cudaStream_t stream = 0);
 
 }
 
@@ -181,16 +181,15 @@ __global__ void short_column_permute(int m, int n, T* d, F s) {
 }
 
 template<typename T, typename F>
-void skinny_row_op(F s, int m, int n, T* d, T* tmp) {
+void skinny_row_op(F s, int m, int n, T* d, T* tmp, cudaStream_t stream) {
     for(int i = 0; i < m; i++) {
-        long_row_shuffle<T, F, 4><<<(n-1)/(256*4)+1,256>>>(m, n, i, d, tmp, s);
-        cudaMemcpy(d + n * i, tmp, sizeof(T) * n, cudaMemcpyDeviceToDevice);
-
+        long_row_shuffle<T, F, 4><<<(n-1)/(256*4)+1,256, 0, stream>>>(m, n, i, d, tmp, s);
+        cudaMemcpyAsync(d + n * i, tmp, sizeof(T) * n, cudaMemcpyDeviceToDevice, stream);
     }
 }
 
 template<typename T, typename F>
-void skinny_col_op(F s, int m, int n, T* d) {
+void skinny_col_op(F s, int m, int n, T* d, cudaStream_t stream) {
     int n_threads = 32;
     // XXX Potential optimization here: figure out how many blocks/sm
     // we should launch
@@ -198,14 +197,14 @@ void skinny_col_op(F s, int m, int n, T* d) {
     dim3 grid_dim(n_blocks);
     dim3 block_dim(n_threads, m);
     short_column_permute<<<grid_dim, block_dim,
-        sizeof(T) * m * n_threads>>>(m, n, d, s);
+        sizeof(T) * m * n_threads, stream>>>(m, n, d, s);
 }
 
 
 namespace c2r {
 
 template<typename T>
-void skinny_transpose(T* data, int m, int n) {
+void skinny_transpose(T* data, int m, int n, cudaStream_t stream) {
     //std::cout << "Doing Skinny C2R transpose of " << m << ", " << n << std::endl;
 
     assert(m <= 32);
@@ -218,13 +217,13 @@ void skinny_transpose(T* data, int m, int n) {
     }
 
     if (c > 1) {
-        skinny_col_op(fused_preop(m, n/c), m, n, data);
+        skinny_col_op(fused_preop(m, n/c), m, n, data, stream);
     }
     T* tmp;
-    cudaMalloc(&tmp, sizeof(T) * n);
-    skinny_row_op(long_shuffle(m, n, c, k), m, n, data, tmp);
-    cudaFree(tmp);
-    skinny_col_op(fused_postop(m, n, c), m, n, data);
+    cudaMallocAsync(&tmp, sizeof(T) * n, stream);
+    skinny_row_op(long_shuffle(m, n, c, k), m, n, data, tmp, stream);
+    cudaFreeAsync(tmp, stream);
+    skinny_col_op(fused_postop(m, n, c), m, n, data, stream);
 
 }
 
@@ -233,7 +232,7 @@ void skinny_transpose(T* data, int m, int n) {
 namespace r2c {
 
 template<typename T>
-void skinny_transpose(T* data, int m, int n) {
+void skinny_transpose(T* data, int m, int n, cudaStream_t stream) {
     //std::cout << "Doing Skinny R2C transpose of " << m << ", " << n << std::endl;
 
     assert(m <= 32);
@@ -245,13 +244,13 @@ void skinny_transpose(T* data, int m, int n) {
         q = t;
     }
 
-    skinny_col_op(fused_preop(m/c, c, m, q), m, n, data);
+    skinny_col_op(fused_preop(m/c, c, m, q), m, n, data, stream);
     T* tmp;
-    cudaMalloc(&tmp, sizeof(T) * n);
-    skinny_row_op(shuffle(m, n, c, 0), m, n, data, tmp);
-    cudaFree(tmp);
+    cudaMallocAsync(&tmp, sizeof(T) * n, stream);
+    skinny_row_op(shuffle(m, n, c, 0), m, n, data, tmp, stream);
+    cudaFreeAsync(tmp, stream);
     if (c > 1) {
-        skinny_col_op(fused_postop(m, n/c), m, n, data);
+        skinny_col_op(fused_postop(m, n/c), m, n, data, stream);
     }
 }
 
