@@ -1,12 +1,12 @@
 add_requires("libomp", {optional = true})
 
+
 target("benchmark")
     set_languages(("c++20"))
     if is_mode("debug") then 
         set_symbols("debug")
     end
     add_headerfiles("../inplace/cuda/*.cuh")
-    add_headerfiles("../inplace/cuda/*.h")
     add_files("../inplace/cuda/*.cu")
     add_headerfiles("../inplace/common/*.h")
     add_headerfiles("../inplace/common/*.cuh")
@@ -24,7 +24,6 @@ target("skinny")
         set_symbols("debug")
     end
     add_headerfiles("../inplace/cuda/*.cuh")
-    add_headerfiles("../inplace/cuda/*.h")
     add_files("../inplace/cuda/*.cu")
     add_headerfiles("../inplace/common/*.h")
     add_headerfiles("../inplace/common/*.cuh")
@@ -42,7 +41,6 @@ target("rotate")
         set_symbols("debug")
     end
     add_headerfiles("../inplace/cuda/*.cuh")
-    add_headerfiles("../inplace/cuda/*.h")
     add_files("../inplace/cuda/*.cu")
     add_headerfiles("../inplace/common/*.h")
     add_headerfiles("../inplace/common/*.cuh")
@@ -60,7 +58,6 @@ target("permute")
         set_symbols("debug")
     end
     add_headerfiles("../inplace/cuda/*.cuh")
-    add_headerfiles("../inplace/cuda/*.h")
     add_files("../inplace/cuda/*.cu")
     add_headerfiles("../inplace/common/*.h")
     add_headerfiles("../inplace/common/*.cuh")
@@ -74,6 +71,8 @@ target("permute")
 
 
 target("openmp")
+
+    add_cxflags("-fopenmp")
     add_packages("libomp")
 
     set_languages(("c++20"))

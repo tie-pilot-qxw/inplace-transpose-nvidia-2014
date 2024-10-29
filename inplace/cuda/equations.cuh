@@ -1,5 +1,4 @@
 #pragma once
-#include "../common/index.cuh"
 #include "../common/reduced_math.cuh"
 #include "../common/gcd.h"
 

@@ -1,5 +1,5 @@
-#include "equations.cuh"
-#include "permute.h"
+#pragma once
+
 #include "../common/index.cuh"
 #include <vector>
 #include <set>
@@ -7,6 +7,14 @@
 #include <thrust/transform.h>
 #include "util.cuh"
 
+namespace inplace {
+namespace detail {
+
+template<typename T, typename F>
+void scatter_permute(F f, int m, int n, T* data, int* tmp);
+
+}
+}
 
 namespace inplace {
 namespace detail {
@@ -111,17 +119,6 @@ void scatter_permute(F f, int m, int n, T* data, int* tmp) {
         (f, data, d_heads, d_lens, heads.size());
 }
 
-
-template void scatter_permute(c2r::scatter_postpermuter, int, int, float*, int*);
-template void scatter_permute(c2r::scatter_postpermuter, int, int, double*, int*);
-template void scatter_permute(c2r::scatter_postpermuter, int, int, int*, int*);
-template void scatter_permute(c2r::scatter_postpermuter, int, int, long long*, int*);
-
-template void scatter_permute(r2c::scatter_prepermuter, int, int, float*, int*);
-template void scatter_permute(r2c::scatter_prepermuter, int, int, double*, int*);
-template void scatter_permute(r2c::scatter_prepermuter, int, int, int*, int*);
-template void scatter_permute(r2c::scatter_prepermuter, int, int, long long*, int*);
-
-
 }
 }
+

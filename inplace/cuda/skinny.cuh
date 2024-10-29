@@ -1,3 +1,5 @@
+#pragma once
+
 #include "introspect.cuh"
 #include "../common/index.cuh"
 #include "../common/gcd.h"
@@ -5,11 +7,29 @@
 #include "equations.cuh"
 #include "smem.cuh"
 #include <cassert>
-
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 #include <thrust/device_ptr.h>
 
+namespace inplace {
+namespace detail {
+
+namespace c2r {
+
+template <typename T>
+void skinny_transpose(T* data, int m, int n);
+
+}
+
+namespace r2c {
+
+template <typename T>
+void skinny_transpose(T* data, int m, int n);
+
+}
+
+}
+}
 
 namespace inplace {
 namespace detail {
@@ -208,12 +228,6 @@ void skinny_transpose(T* data, int m, int n) {
 
 }
 
-
-template void skinny_transpose(float* data, int m, int n);
-template void skinny_transpose(double* data, int m, int n);
-template void skinny_transpose(int* data, int m, int n);
-template void skinny_transpose(long long* data, int m, int n);
-
 }
 
 namespace r2c {
@@ -241,13 +255,7 @@ void skinny_transpose(T* data, int m, int n) {
     }
 }
 
-template void skinny_transpose(float* data, int m, int n);
-template void skinny_transpose(double* data, int m, int n);
-template void skinny_transpose(int* data, int m, int n);
-template void skinny_transpose(long long* data, int m, int n);
-
 }
-
 
 
 }

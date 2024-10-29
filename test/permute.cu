@@ -1,4 +1,4 @@
-#include <cuda/permute.h>
+#include <cuda/permute.cuh>
 #include <cuda/equations.cuh>
 #include <thrust/device_vector.h>
 #include <thrust/iterator/counting_iterator.h>

@@ -1,9 +1,21 @@
-#include "rotate.h"
+#pragma once
+
 #include "util.cuh"
-#include "equations.cuh"
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/transform.h>
+#include "../common/reduced_math.cuh"
+#include "../common/index.cuh"
+
+namespace inplace {
+namespace detail {
+
+    template<typename F, typename T>
+    void rotate(F f, int m, int n, T* data);
+
+}
+}
+
 
 namespace inplace {
 namespace detail {
@@ -108,7 +120,7 @@ __global__ void fine_col_rotate(F fn, int m, int n, T* d) {
         
             int smem_idx = threadIdx.y * 32 + threadIdx.x;
 
-            T first = -2;
+            T first; // = -2;
             if (row < m) first = *read_ptr;
 
             bool first_phase = (threadIdx.y >= fine_rotation_amount);
@@ -136,7 +148,7 @@ __global__ void fine_col_rotate(F fn, int m, int n, T* d) {
 
             //Final block (read_ptr may have fallen off the edge)
             int remainder = m % 32;
-            T tmp = -3;
+            T tmp; // = -3;
             if (threadIdx.y < remainder) tmp = *read_ptr;
             int tmp_dest_row = 32 - fine_rotation_amount + threadIdx.y;
             if ((tmp_dest_row >= 0) && (tmp_dest_row < 32))
@@ -173,27 +185,6 @@ void rotate(F fn, int m, int n, T* data) {
     coarse_col_rotate<<<n_blocks, dim3(32, 16)>>>(
         fn, m, n, data);
 }
-
-template void rotate(c2r::prerotator, int, int, float*);
-template void rotate(c2r::prerotator, int, int, double*);
-template void rotate(c2r::prerotator, int, int, int*);
-template void rotate(c2r::prerotator, int, int, long long*);
-
-template void rotate(c2r::postrotator, int, int, float*);
-template void rotate(c2r::postrotator, int, int, double*);
-template void rotate(c2r::postrotator, int, int, int*);
-template void rotate(c2r::postrotator, int, int, long long*);
-
-template void rotate(r2c::prerotator, int, int, float*);
-template void rotate(r2c::prerotator, int, int, double*);
-template void rotate(r2c::prerotator, int, int, int*);
-template void rotate(r2c::prerotator, int, int, long long*);
-
-template void rotate(r2c::postrotator, int, int, float*);
-template void rotate(r2c::postrotator, int, int, double*);
-template void rotate(r2c::postrotator, int, int, int*);
-template void rotate(r2c::postrotator, int, int, long long*);
-
 
 }
 }

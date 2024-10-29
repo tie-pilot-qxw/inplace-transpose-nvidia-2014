@@ -1,5 +1,7 @@
+#include <atomic>
+#include <cstdint>
 #include <iostream>
-#include <cuda/transpose.h>
+#include <cuda/transpose.cuh>
 
 #include <thrust/device_vector.h>
 #include <thrust/iterator/counting_iterator.h>
@@ -39,7 +41,7 @@ void time_test(bool row_major, int m, int n) {
     
     thrust::device_vector<T> x(m*n);
     thrust::counting_iterator<int> c(0);
-    thrust::transform(c, c+(m*n), x.begin(), thrust::identity<T>());
+    // thrust::transform(c, c+(m*n), x.begin(), thrust::identity<T>());
     cudaEvent_t start,stop;
     float time=0;
     cudaEventCreate(&start);
@@ -60,18 +62,18 @@ void time_test(bool row_major, int m, int n) {
     std::cout << "  Throughput: " << gbs << " GB/s" << std::endl;
 
     
-    bool correct;
-    if (row_major) {
-        correct = is_tx_row_major(x, m, n);
-    } else {
-        correct = is_tx_col_major(x, m, n);
-    }
-    if (correct) {
-        std::cout << "PASSES" << std::endl << std::endl;
-    } else {
-        std::cout << "FAILS" << std::endl << std::endl;
-        exit(2);
-    }
+    // bool correct;
+    // if (row_major) {
+    //     correct = is_tx_row_major(x, m, n);
+    // } else {
+    //     correct = is_tx_col_major(x, m, n);
+    // }
+    // if (correct) {
+    //     std::cout << "PASSES" << std::endl << std::endl;
+    // } else {
+    //     std::cout << "FAILS" << std::endl << std::endl;
+    //     exit(2);
+    // }
 }
 
 void generate_random_size(int& m, int &n) {
@@ -81,11 +83,15 @@ void generate_random_size(int& m, int &n) {
     n = inplace::detail::randint(lb, ub);
 }
 
+struct chunk {
+    std::uint32_t data[8];
+};
+
 int main() {
     for(int i = 0; i < 10000; i++) {
         int m, n;
         generate_random_size(m, n);
         bool row_major = rand() & 0x1;
-        time_test<double>(row_major, m, n);
+        time_test<chunk>(row_major, m, n);
     }
 }

@@ -1,4 +1,4 @@
-#include <cuda/rotate.h>
+#include <cuda/rotate.cuh>
 #include <cuda/equations.cuh>
 #include <common/gcd.h>
 #include <thrust/device_vector.h>
